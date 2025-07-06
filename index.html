@@ -84,12 +84,14 @@
     <script src="api_keys.js"></script>
 <script src="script.js"></script>
 <script>
-    const script = document.createElement('script');
-    script.src ="";
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
+    // Initialize the Google Maps API
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry`;
+  script.async = true;
+  script.defer = true;
+  document.head.appendChild(script);
 </script>
+
 
 </body>
 </html>
