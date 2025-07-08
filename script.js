@@ -3,18 +3,34 @@ let geocoder;
 let marker;
 
 function initMap() {
-    // Intializing with Map centered at New Delhi 
-    map = new google.maps.Map(document.getElementById('map'),
+  const map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 25.6, lng: 85.1 }, // e.g., center of Bihar
+    zoom: 7,
+  });
 
-{
-    center : {lat: 28.6139, lng: 77.2090 },
-    zoom: 12,
-    disableDefaultUI: false
-    });
+  fetch('data/flood_zones.json')
+    .then(response => response.json())
+    .then(data => {
+      data.features.forEach(feature => {
+        const coords = feature.geometry.coordinates[0].map(coord => ({
+          lat: coord[1],
+          lng: coord[0]
+        }));
 
-    geocoder = new google.maps.Geocoder();
-    
+        const polygon = new google.maps.Polygon({
+          paths: coords,
+          strokeColor: '#FF0000',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF0000',
+          fillOpacity: 0.35,
+          map: map,
+        });
+      });
+    })
+    .catch(error => console.error('Error loading flood zones:', error));
 }
+
 
 function geocodeAddress() {
     const address = document.getElementById("address").value;
