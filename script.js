@@ -50,7 +50,12 @@ function initMap() {
         });
       });
     })
+     new markerclusterer.MarkerClusterer({
+      markers, map
+    })
+       
     .catch(error => console.error('Error loading crime data:', error));
+        
 }
 
 
