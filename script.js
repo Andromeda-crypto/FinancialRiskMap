@@ -4,7 +4,7 @@ let marker;
 
 function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
-    center : { lat: 28.6139, lng: 77.2090},
+    center: { lat: 28.6139, lng: 77.2090 },
     zoom: 10,
   });
 
@@ -17,7 +17,7 @@ function initMap() {
       data.features.forEach(feature => {
         const coords = feature.geometry.coordinates[0].map(coord => ({
           lat: coord[1],
-          lng: coord[0]
+          lng: coord[0],
         }));
 
         const polygon = new google.maps.Polygon({
@@ -31,35 +31,48 @@ function initMap() {
         });
       });
     })
-    .catch(error => console.error('Error loading flood zones:', error));
+    .catch((error) => console.error('Error loading flood zones:', error));
 
   // Load and plot crime markers with clustering
   fetch('data/crime_data.json')
-    .then(response => response.json())
-    .then(data => {
-      console.log(`Loaded ${markers.length} crime markers`);
-      const markers = data.map(crime => new google.maps.Marker({
-        position: { lat: crime.lat, lng: crime.lng },
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(`Loaded ${data.length} crime records`);
+
+      const validCrimes = data.filter(
+        (crime) =>
+          crime.lat &&
+          crime.lng &&
+          !isNaN(parseFloat(crime.lat)) &&
+          !isNaN(parseFloat(crime.lng))
+      );
+
+      const markers = validCrimes.map((crime) => new google.maps.Marker({
+        position: {
+          lat: parseFloat(crime.lat),
+          lng: parseFloat(crime.lng),
+        },
         title: `Crime: ${crime.type}`,
         icon: {
           path: google.maps.SymbolPath.CIRCLE,
           scale: 4,
           fillColor: '#0000FF',
           fillOpacity: 0.6,
-          strokeWeight: 0
-        }
-        
+          strokeWeight: 0,
+        },
       }));
 
-      // Cluster the markers
+      console.log(`Created ${markers.length} valid markers`);
+
       const markerCluster = new MarkerClusterer(map, markers, {
         imagePath:
-          'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'
+          'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m',
       });
     })
-    .catch(error => console.error('Error loading crime data:', error));
+    .catch((error) => console.error('Error loading crime data:', error));
 }
 
+// 🧭 Address-to-marker functionality
 function geocodeAddress() {
   const address = document.getElementById("address").value;
 
@@ -87,6 +100,7 @@ function geocodeAddress() {
   });
 }
 
+// 📍 Manual click-to-drop-marker support
 function placeMarker(location) {
   if (marker) {
     marker.setMap(null);
