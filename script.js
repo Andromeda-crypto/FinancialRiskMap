@@ -4,8 +4,8 @@ let marker;
 
 function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: 25.6, lng: 85.1 },
-    zoom: 7,
+    center : { lat: 28.6139, lng: 77.2090},
+    zoom: 10,
   });
 
   geocoder = new google.maps.Geocoder();
