@@ -37,6 +37,7 @@ function initMap() {
   fetch('data/crime_data.json')
     .then(response => response.json())
     .then(data => {
+      console.log(`Loaded ${markers.length} crime markers`);
       const markers = data.map(crime => new google.maps.Marker({
         position: { lat: crime.lat, lng: crime.lng },
         title: `Crime: ${crime.type}`,
@@ -47,6 +48,7 @@ function initMap() {
           fillOpacity: 0.6,
           strokeWeight: 0
         }
+        
       }));
 
       // Cluster the markers
