@@ -82,9 +82,8 @@
 
     
     <script src="api_keys.js"></script>
-    <script type="module">
-    import { MarkerClusterer} from 'https://unpkg.com/@googlemaps/markerclusterer@2.0.15/dist/markerclusterer.esm.min.js' ;
-    window.MarkerClusterer = MarkerClusterer;
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.umd.js"></script>
+
     </script>
     <script src="script.js"></script>
     
@@ -92,7 +91,7 @@
 <script>
     // Initialize the Google Maps API
   const script = document.createElement('script');
-  script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry`;
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry&loading=async`;
   script.async = true;
   script.defer = true;
   document.head.appendChild(script);

@@ -39,11 +39,12 @@ function initMap() {
     .then((data) => {
       console.log(`Loaded ${data.length} crime records`);
 
-      const validCrimes = data.filter((crime) => {
-        const lat = parseFloat(crime.lat);
-        const lng = parseFloat(crime.lng);
-        return isFinite(lat) && isFinite(lng);
-      });
+      const validCrimes = data.filter(crime => {
+  const lat = parseFloat(crime.lat);
+  const lng = parseFloat(crime.lng);
+  return isFinite(lat) && isFinite(lng);
+});
+
 
       const markers = validCrimes.map((crime) => new google.maps.Marker({
         position: {
