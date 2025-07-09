@@ -3,10 +3,12 @@ let geocoder;
 let marker;
 
 function initMap() {
-  const map = new google.maps.Map(document.getElementById('map'), {
-    center: { lat: 25.6, lng: 85.1 }, 
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 25.6, lng: 85.1 },
     zoom: 7,
   });
+
+  geocoder = new google.maps.Geocoder();
 
   // Load flood zones
   fetch('data/flood_zones.json')
@@ -31,74 +33,69 @@ function initMap() {
     })
     .catch(error => console.error('Error loading flood zones:', error));
 
-  // Load and plot crime markers
+  // Load and plot crime markers with clustering
   fetch('data/crime_data.json')
     .then(response => response.json())
     .then(data => {
-      data.forEach(crime => {
-        const marker = new google.maps.Marker({
-          position: { lat: crime.lat, lng: crime.lng },
-          map: map,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 4,
-            fillColor: '#0000FF',
-            fillOpacity: 0.6,
-            strokeWeight: 0
-          },
-          title: `Crime: ${crime.type}`
-        });
+      const markers = data.map(crime => new google.maps.Marker({
+        position: { lat: crime.lat, lng: crime.lng },
+        title: `Crime: ${crime.type}`,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 4,
+          fillColor: '#0000FF',
+          fillOpacity: 0.6,
+          strokeWeight: 0
+        }
+      }));
+
+      // Cluster the markers
+      const markerCluster = new MarkerClusterer(map, markers, {
+        imagePath:
+          'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'
       });
     })
-     new markerclusterer.MarkerClusterer({
-      markers, map
-    })
-       
     .catch(error => console.error('Error loading crime data:', error));
-        
 }
-
 
 function geocodeAddress() {
-    const address = document.getElementById("address").value;
+  const address = document.getElementById("address").value;
 
-    if (!address) {
-        alert("Please enter a valid address.");
-        return;
+  if (!address) {
+    alert("Please enter a valid address.");
+    return;
+  }
+
+  geocoder.geocode({ address: address }, (results, status) => {
+    if (status === "OK") {
+      map.setCenter(results[0].geometry.location);
+      if (marker) {
+        marker.setMap(null);
+      }
+
+      marker = new google.maps.Marker({
+        map: map,
+        position: results[0].geometry.location,
+        animation: google.maps.Animation.DROP,
+      });
+      console.log("Coordinates: ", results[0].geometry.location);
+    } else {
+      alert("Geocode was not successful: " + status);
     }
-
-    geocoder.geocode({ address: address }, (results, status) => {
-        if (status === "OK") {
-            map.setCenter(results[0].geometry.location);
-            if (marker) {
-                marker.setMap(null);
-            }
-
-            marker = new google.maps.Marker({
-                map: map,
-                position: results[0].geometry.location,
-                animation: google.maps.Animation.DROP,
-            });
-            console.log("Coordinates: ", results[0].geometry.location);
-
-        } else {
-            alert("Geocode was not successful: " + status);
-        }
-    });
+  });
 }
-
 
 function placeMarker(location) {
-    if (marker) {
-        marker.setMap(null);
-    }
+  if (marker) {
+    marker.setMap(null);
+  }
 
-    marker = new google.maps.Marker({
-        position: location,
-        map: map,
-        animation: google.maps.Animation.DROP,
-    });
+  marker = new google.maps.Marker({
+    position: location,
+    map: map,
+    animation: google.maps.Animation.DROP,
+  });
 
-    
-    console.log("Clicked coordinates: ", location);
+  console.log("Clicked coordinates: ", location);
 }
+
