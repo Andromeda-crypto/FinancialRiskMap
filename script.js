@@ -40,26 +40,30 @@ function initMap() {
       console.log(`Loaded ${data.length} crime records`);
 
       const validCrimes = data.filter(crime => {
-  const lat = parseFloat(crime.lat);
-  const lng = parseFloat(crime.lng);
-  return isFinite(lat) && isFinite(lng);
-});
+        const lat = parseFloat(crime.lat);
+        const lng = parseFloat(crime.lng);
+        if (!isFinite(lat) || !isFinite(lng)) {
+          console.warn('Skipping invalid coordinates:', crime);
+          return false;
+        }
+        return true;
+      });
 
-
-      const markers = validCrimes.map((crime) => new google.maps.Marker({
-        position: {
-          lat: parseFloat(crime.lat),
-          lng: parseFloat(crime.lng),
-        },
-        title: `Crime: ${crime.type}`,
-        icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 4,
-          fillColor: '#0000FF',
-          fillOpacity: 0.6,
-          strokeWeight: 0,
-        },
-      }));
+      const markers = validCrimes.map((crime) => {
+        const lat = parseFloat(crime.lat);
+        const lng = parseFloat(crime.lng);
+        return new google.maps.Marker({
+          position: { lat, lng },
+          title: `Crime: ${crime.type}`,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 4,
+            fillColor: '#0000FF',
+            fillOpacity: 0.6,
+            strokeWeight: 0,
+          },
+        });
+      });
 
       console.log(`Created ${markers.length} valid markers`);
 
@@ -113,5 +117,4 @@ function placeMarker(location) {
 
   console.log("Clicked coordinates: ", location);
 }
-
 
