@@ -1,6 +1,8 @@
 let map;
 let geocoder;
 let marker;
+let floodZones = [];
+let crimes = [];
 
 function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
@@ -14,13 +16,13 @@ function initMap() {
   fetch('data/flood_zones.json')
     .then(response => response.json())
     .then(data => {
-      data.features.forEach(feature => {
+      floodZones = data.features.map(feature => {
         const coords = feature.geometry.coordinates[0].map(coord => ({
           lat: coord[1],
           lng: coord[0],
         }));
 
-        new google.maps.Polygon({
+        const polygon = new google.maps.Polygon({
           paths: coords,
           strokeColor: '#FF0000',
           strokeOpacity: 0.8,
@@ -29,6 +31,8 @@ function initMap() {
           fillOpacity: 0.35,
           map: map,
         });
+
+        return { paths: coords };
       });
     })
     .catch((error) => console.error('Error loading flood zones:', error));
@@ -39,7 +43,7 @@ function initMap() {
     .then((data) => {
       console.log(`Loaded ${data.length} crime records`);
 
-      const validCrimes = data.filter(crime => {
+      crimes = data.filter(crime => {
         const lat = parseFloat(crime.lat);
         const lng = parseFloat(crime.lng);
         if (!isFinite(lat) || !isFinite(lng)) {
@@ -49,7 +53,7 @@ function initMap() {
         return true;
       });
 
-      const markers = validCrimes.map((crime) => {
+      const markers = crimes.map((crime) => {
         const lat = parseFloat(crime.lat);
         const lng = parseFloat(crime.lng);
         return new google.maps.Marker({
@@ -67,7 +71,6 @@ function initMap() {
 
       console.log(`Created ${markers.length} valid markers`);
 
-      // Apply Marker Clustering
       new markerClusterer.MarkerClusterer({
         map: map,
         markers: markers,
@@ -77,7 +80,6 @@ function initMap() {
     .catch((error) => console.error('Error loading crime data:', error));
 }
 
-// Geocode function for address input
 function geocodeAddress() {
   const address = document.getElementById("address").value;
 
@@ -88,21 +90,68 @@ function geocodeAddress() {
 
   geocoder.geocode({ address: address }, (results, status) => {
     if (status === "OK") {
-      map.setCenter(results[0].geometry.location);
+      const location = results[0].geometry.location;
+      map.setCenter(location);
+
       if (marker) {
         marker.setMap(null);
       }
 
       marker = new google.maps.Marker({
         map: map,
-        position: results[0].geometry.location,
+        position: location,
         animation: google.maps.Animation.DROP,
       });
-      console.log("Coordinates: ", results[0].geometry.location);
+
+      console.log("Coordinates: ", location);
+
+      const riskScore = calculateRiskScore(location);
+      const riskLevel = classifyRisk(riskScore);
+      console.log("Risk Score:", riskScore, "| Risk Level:", riskLevel);
+
+      alert(`Risk Assessment\nScore: ${riskScore}\nLevel: ${riskLevel}`);
     } else {
       alert("Geocode was not successful: " + status);
     }
   });
+}
+
+// --------- RISK ASSESSMENT UTILITIES -----------
+
+function isInFloodZone(location) {
+  return floodZones.some(zone => {
+    const polygon = new google.maps.Polygon({ paths: zone.paths });
+    return google.maps.geometry.poly.containsLocation(location, polygon);
+  });
+}
+
+function countNearbyCrimes(location, radiusMeters = 1000) {
+  return crimes.filter(crime => {
+    const crimeLatLng = new google.maps.LatLng(parseFloat(crime.lat), parseFloat(crime.lng));
+    const distance = google.maps.geometry.spherical.computeDistanceBetween(location, crimeLatLng);
+    return distance <= radiusMeters;
+  }).length;
+}
+
+function calculateRiskScore(location) {
+  let score = 0;
+
+  if (isInFloodZone(location)) {
+    console.log('Location is within a flood zone.');
+    score += 50;
+  }
+
+  const nearbyCrimeCount = countNearbyCrimes(location);
+  console.log(`Number of nearby crimes within 1km: ${nearbyCrimeCount}`);
+  score += nearbyCrimeCount * 5;
+
+  return score;
+}
+
+function classifyRisk(score) {
+  if (score >= 80) return 'High Risk';
+  if (score >= 40) return 'Moderate Risk';
+  return 'Low Risk';
 }
 
 function placeMarker(location) {
