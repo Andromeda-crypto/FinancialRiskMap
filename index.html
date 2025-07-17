@@ -142,7 +142,7 @@
 
     <script>
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry,visualization&loading=async`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry,visualization,places&loading=async`;
         script.async = true;
         script.defer = true;
         document.head.appendChild(script);
@@ -152,7 +152,8 @@
       <h4>Legend</h4>
       <label><input type="checkbox" id="toggle-crime" checked> Crime Markers</label><br>
       <label><input type="checkbox" id="toggle-heatmap"> Crime Heatmap</label><br>
-      <label><input type="checkbox" id="toggle-flood" checked> Flood Zones</label>
+      <label><input type="checkbox" id="toggle-flood" checked> Flood Zones</label><br>
+      <label><input type="checkbox" id="toggle-transport" checked> Transport Stops</label>
     </div>
 
 </body>

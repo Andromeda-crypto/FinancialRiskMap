@@ -132,6 +132,57 @@ function hideSpinner() {
   spinner.style.display = 'none';
 }
 
+// --- Transport Stops ---
+function fetchTransportStops(location, radius = 2000) {
+  return new Promise((resolve, reject) => {
+    if (!window.google || !google.maps.places) {
+      reject('Google Maps Places library not loaded');
+      return;
+    }
+    const service = new google.maps.places.PlacesService(map);
+    const types = ['bus_station', 'train_station', 'transit_station', 'subway_station'];
+    let allResults = [];
+    let completed = 0;
+    types.forEach(type => {
+      service.nearbySearch({
+        location,
+        radius,
+        type
+      }, (results, status) => {
+        completed++;
+        if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+          allResults = allResults.concat(results);
+        }
+        if (completed === types.length) {
+          // Remove duplicates by place_id
+          const unique = {};
+          allResults.forEach(r => unique[r.place_id] = r);
+          resolve(Object.values(unique));
+        }
+      });
+    });
+  });
+}
+
+function showTransportMarkers(stops) {
+  if (window.transportMarkers) {
+    window.transportMarkers.forEach(m => m.setMap(null));
+  }
+  window.transportMarkers = stops.map(stop => new google.maps.Marker({
+    position: stop.geometry.location,
+    map: map,
+    title: stop.name,
+    icon: {
+      path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+      scale: 5,
+      fillColor: '#ff9800',
+      fillOpacity: 0.9,
+      strokeColor: '#185a9d',
+      strokeWeight: 2
+    }
+  }));
+}
+
 function geocodeAddress() {
   const address = document.getElementById("address").value.trim();
 
@@ -151,6 +202,13 @@ function geocodeAddress() {
       map.setCenter(location);
 
       placeMarker(location);
+
+      // Fetch and show transport stops
+      if (window.google && google.maps.places) {
+        fetchTransportStops(location).then(stops => {
+          showTransportMarkers(stops);
+        });
+      }
 
       // Calculate breakdown with custom weights
       const weights = getRiskWeights();
@@ -376,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const crimeToggle = document.getElementById('toggle-crime');
   const heatmapToggle = document.getElementById('toggle-heatmap');
   const floodToggle = document.getElementById('toggle-flood');
+  const transportToggle = document.getElementById('toggle-transport');
 
   crimeToggle.addEventListener('change', () => {
     if (window.crimeMarkers) {
@@ -393,6 +452,11 @@ document.addEventListener('DOMContentLoaded', () => {
   floodToggle.addEventListener('change', () => {
     if (window.floodPolygons) {
       window.floodPolygons.forEach(p => p.setMap(floodToggle.checked ? map : null));
+    }
+  });
+  transportToggle.addEventListener('change', () => {
+    if (window.transportMarkers) {
+      window.transportMarkers.forEach(m => m.setMap(transportToggle.checked ? map : null));
     }
   });
 
