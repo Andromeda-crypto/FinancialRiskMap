@@ -114,7 +114,24 @@
         <div style="margin-top:18px;">
           <button id="save-pdf-btn">Save as PDF</button>
           <button id="share-report-btn">Share Report</button>
+          <button id="customize-weights-btn">Customize Weights</button>
         </div>
+    </div>
+    
+    <div id="weights-modal" class="modal" style="display:none;">
+      <div class="modal-content">
+        <span class="close" id="close-weights-modal">&times;</span>
+        <h3>Customize Risk Weights</h3>
+        <form id="weights-form">
+          <label for="weight-flood">Flood Zone Weight: <span id="weight-flood-value">50</span></label>
+          <input type="range" id="weight-flood" min="0" max="100" value="50">
+          <br>
+          <label for="weight-crime">Crime Weight (per crime): <span id="weight-crime-value">5</span></label>
+          <input type="range" id="weight-crime" min="0" max="20" value="5">
+          <br><br>
+          <button type="submit">Save Weights</button>
+        </form>
+      </div>
     </div>
     
     <script src="api_keys.js"></script>

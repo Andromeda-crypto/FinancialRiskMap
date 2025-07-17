@@ -152,19 +152,20 @@ function geocodeAddress() {
 
       placeMarker(location);
 
-      // Calculate breakdown
+      // Calculate breakdown with custom weights
+      const weights = getRiskWeights();
       const breakdown = [];
       let score = 0;
       let flood = isInFloodZone(location);
       if (flood) {
-        breakdown.push({ factor: 'Flood Zone', value: '+50' });
-        score += 50;
+        breakdown.push({ factor: 'Flood Zone', value: `+${weights.flood}` });
+        score += weights.flood;
       } else {
         breakdown.push({ factor: 'Flood Zone', value: '+0' });
       }
       const nearbyCrimeCount = countNearbyCrimes(location);
-      breakdown.push({ factor: `Nearby Crimes (${nearbyCrimeCount})`, value: `+${nearbyCrimeCount * 5}` });
-      score += nearbyCrimeCount * 5;
+      breakdown.push({ factor: `Nearby Crimes (${nearbyCrimeCount})`, value: `+${nearbyCrimeCount * weights.crime}` });
+      score += nearbyCrimeCount * weights.crime;
       const riskLevel = classifyRisk(score);
       console.log("Risk Score:", score, "| Risk Level:", riskLevel);
 
@@ -317,6 +318,19 @@ function shareReport() {
   }
 }
 
+// --- Risk Weights ---
+function getRiskWeights() {
+  return {
+    flood: Number(localStorage.getItem('weight-flood')) || 50,
+    crime: Number(localStorage.getItem('weight-crime')) || 5
+  };
+}
+function setRiskWeights(flood, crime) {
+  localStorage.setItem('weight-flood', flood);
+  localStorage.setItem('weight-crime', crime);
+}
+
+// --- Modal Logic ---
 document.addEventListener('DOMContentLoaded', () => {
   // Theme toggle
   const themeToggle = document.getElementById('theme-toggle');
@@ -380,6 +394,34 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.floodPolygons) {
       window.floodPolygons.forEach(p => p.setMap(floodToggle.checked ? map : null));
     }
+  });
+
+  // Modal open/close
+  const modal = document.getElementById('weights-modal');
+  const openBtn = document.getElementById('customize-weights-btn');
+  const closeBtn = document.getElementById('close-weights-modal');
+  const floodSlider = document.getElementById('weight-flood');
+  const crimeSlider = document.getElementById('weight-crime');
+  const floodVal = document.getElementById('weight-flood-value');
+  const crimeVal = document.getElementById('weight-crime-value');
+  openBtn.addEventListener('click', () => {
+    // Load current weights
+    const weights = getRiskWeights();
+    floodSlider.value = weights.flood;
+    crimeSlider.value = weights.crime;
+    floodVal.textContent = weights.flood;
+    crimeVal.textContent = weights.crime;
+    modal.style.display = 'flex';
+  });
+  closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+  window.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+  floodSlider.addEventListener('input', () => { floodVal.textContent = floodSlider.value; });
+  crimeSlider.addEventListener('input', () => { crimeVal.textContent = crimeSlider.value; });
+  document.getElementById('weights-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    setRiskWeights(floodSlider.value, crimeSlider.value);
+    modal.style.display = 'none';
+    showNotification('Weights saved! New risk calculations will use your preferences.', 'success', 2000);
   });
 });
 
