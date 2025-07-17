@@ -230,8 +230,18 @@ function geocodeAddress() {
       displayRiskResult(score, riskLevel, breakdown);
       saveRecentSearch(address, score, riskLevel, breakdown);
       showNotification("Risk assessment complete!", 'success', 2000);
+      if (riskLevel === 'High Risk' && results[0] && results[0].geometry && results[0].geometry.location) {
+        showRecommendations(results[0].geometry.location);
+      } else {
+        document.getElementById('recommendations-box').style.display = 'none';
+      }
+      renderReports(address);
+      showRiskAlert(riskLevel, address);
+      showAIPrediction(address, score, riskLevel);
     } else {
       showNotification("Geocode was not successful: " + status);
+      hideRiskAlert();
+      hideAIPrediction();
     }
   });
 }
@@ -488,6 +498,61 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.style.display = 'none';
     showNotification('Weights saved! New risk calculations will use your preferences.', 'success', 2000);
   });
+
+  document.getElementById('report-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const address = document.getElementById('address').value.trim();
+    const text = document.getElementById('report-text').value.trim();
+    if (!address || !text) return;
+    addReportForAddress(address, text);
+    document.getElementById('report-text').value = '';
+    renderReports(address);
+    showNotification('Report submitted! Thank you for contributing.', 'success', 2000);
+  });
+
+  // Compare modal open/close
+  const compareModal = document.getElementById('compare-modal');
+  const openCompareBtn = document.getElementById('open-compare-btn');
+  const closeCompareBtn = document.getElementById('close-compare-modal');
+  openCompareBtn.addEventListener('click', () => { compareModal.style.display = 'flex'; });
+  closeCompareBtn.addEventListener('click', () => { compareModal.style.display = 'none'; });
+  window.addEventListener('click', (e) => { if (e.target === compareModal) compareModal.style.display = 'none'; });
+  // Compare form logic
+  document.getElementById('compare-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const addr1 = document.getElementById('compare-address-1').value.trim();
+    const addr2 = document.getElementById('compare-address-2').value.trim();
+    if (!addr1 || !addr2) return;
+    const [r1, r2] = await Promise.all([
+      getRiskAndBreakdown(addr1),
+      getRiskAndBreakdown(addr2)
+    ]);
+    renderCompareResults(r1, r2);
+  });
+
+  document.getElementById('locate-me-btn').addEventListener('click', function() {
+    if (!navigator.geolocation) {
+      showNotification('Geolocation is not supported by your browser.');
+      return;
+    }
+    showSpinner();
+    navigator.geolocation.getCurrentPosition(function(pos) {
+      const latlng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      // Reverse geocode to address
+      geocoder.geocode({ location: latlng }, (results, status) => {
+        hideSpinner();
+        if (status === 'OK' && results[0]) {
+          document.getElementById('address').value = results[0].formatted_address;
+          geocodeAddress();
+        } else {
+          showNotification('Could not determine address for your location.');
+        }
+      });
+    }, function() {
+      hideSpinner();
+      showNotification('Unable to retrieve your location.');
+    });
+  });
 });
 
 // --- Store markers/polygons for legend control ---
@@ -577,6 +642,215 @@ function saveRecentSearch(region, score, level, breakdown) {
   searches.unshift({ region, score, level, breakdown, timestamp: Date.now() });
   if (searches.length > 10) searches = searches.slice(0, 10);
   localStorage.setItem('recentRiskSearches', JSON.stringify(searches));
+}
+
+async function getNearbyNeighborhoods(location, radius = 3000) {
+  return new Promise((resolve, reject) => {
+    if (!window.google || !google.maps.places) {
+      reject('Google Maps Places library not loaded');
+      return;
+    }
+    const service = new google.maps.places.PlacesService(map);
+    service.nearbySearch({
+      location,
+      radius,
+      type: 'neighborhood'
+    }, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+        resolve(results.map(r => r.name));
+      } else {
+        resolve([]);
+      }
+    });
+  });
+}
+
+async function getRiskForAddress(address) {
+  return new Promise((resolve) => {
+    geocoder.geocode({ address: address }, (results, status) => {
+      if (status === "OK") {
+        const location = results[0].geometry.location;
+        let score = 0;
+        const weights = getRiskWeights();
+        let flood = isInFloodZone(location);
+        if (flood) score += weights.flood;
+        const nearbyCrimeCount = countNearbyCrimes(location);
+        score += nearbyCrimeCount * weights.crime;
+        // For now, ignore transport in recommendations
+        const riskLevel = classifyRisk(score);
+        resolve({ address, score, riskLevel });
+      } else {
+        resolve(null);
+      }
+    });
+  });
+}
+
+async function showRecommendations(location) {
+  const box = document.getElementById('recommendations-box');
+  box.innerHTML = '';
+  box.style.display = 'none';
+  // Find nearby neighborhoods
+  const names = await getNearbyNeighborhoods(location);
+  if (!names.length) return;
+  // Get risk for each, filter for lower risk
+  const recs = [];
+  for (let name of names.slice(0, 6)) {
+    const risk = await getRiskForAddress(name);
+    if (risk && (risk.riskLevel === 'Moderate Risk' || risk.riskLevel === 'Low Risk')) {
+      recs.push(risk);
+      if (recs.length >= 3) break;
+    }
+  }
+  if (!recs.length) return;
+  box.innerHTML = '<b>Safer Nearby Recommendations:</b>' + recs.map(r =>
+    `<div class="recommendation-item">${r.address} <span style="color:${r.riskLevel==='Low Risk'?'#43cea2':'#ff9800'}">${r.riskLevel}</span> <button class="recommendation-btn" onclick="geocodeAddressFromRec('${r.address.replace(/'/g, "\\'")}')">Check</button></div>`
+  ).join('');
+  box.style.display = '';
+}
+
+window.geocodeAddressFromRec = function(address) {
+  document.getElementById('address').value = address;
+  geocodeAddress();
+}
+
+function getReportsForAddress(address) {
+  const all = JSON.parse(localStorage.getItem('communityReports') || '{}');
+  return all[address] || [];
+}
+function addReportForAddress(address, text) {
+  const all = JSON.parse(localStorage.getItem('communityReports') || '{}');
+  if (!all[address]) all[address] = [];
+  all[address].unshift({ text, time: Date.now() });
+  if (all[address].length > 10) all[address] = all[address].slice(0, 10);
+  localStorage.setItem('communityReports', JSON.stringify(all));
+}
+function renderReports(address) {
+  const section = document.getElementById('community-reports');
+  const list = document.getElementById('reports-list');
+  const reports = getReportsForAddress(address);
+  if (!address) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  list.innerHTML = '';
+  if (!reports.length) {
+    list.innerHTML = '<li style="color:#888;">No reports yet for this location.</li>';
+    return;
+  }
+  for (const r of reports) {
+    const li = document.createElement('li');
+    li.className = 'report-item';
+    li.innerHTML = `${r.text} <span class='report-meta'>${timeAgo(r.time)}</span>`;
+    list.appendChild(li);
+  }
+}
+function timeAgo(ts) {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.floor(diff/60) + ' min ago';
+  if (diff < 86400) return Math.floor(diff/3600) + ' hr ago';
+  return Math.floor(diff/86400) + 'd ago';
+}
+
+function showRiskAlert(riskLevel, address) {
+  const alertBox = document.getElementById('risk-alert');
+  let message = '';
+  let cls = '';
+  if (riskLevel === 'High Risk') {
+    message = '⚠️ High Risk Area! Exercise extra caution.';
+    cls = 'high';
+  } else if (riskLevel === 'Moderate Risk') {
+    message = '⚠️ Moderate Risk. Stay alert and informed.';
+    cls = 'moderate';
+  } else {
+    message = '✔️ Low Risk. Area is generally safe.';
+    cls = 'low';
+  }
+  // Check for recent community reports (last 24h)
+  const reports = getReportsForAddress(address);
+  const recent = reports.filter(r => Date.now() - r.time < 24*3600*1000);
+  if (recent.length > 0) {
+    message += ` <br>🗣️ ${recent.length} recent community report${recent.length>1?'s':''} for this area!`;
+    cls = 'high';
+  }
+  alertBox.innerHTML = message;
+  alertBox.className = cls;
+  alertBox.style.display = '';
+}
+function hideRiskAlert() {
+  const alertBox = document.getElementById('risk-alert');
+  alertBox.style.display = 'none';
+}
+
+function showAIPrediction(address, currentScore, riskLevel) {
+  const box = document.getElementById('ai-prediction-box');
+  // Get recent scores for this address
+  const searches = JSON.parse(localStorage.getItem('recentRiskSearches') || '[]');
+  const recent = searches.filter(s => s.region === address).slice(0, 5);
+  const scores = recent.map(s => s.score);
+  let trend = 'stable';
+  if (scores.length >= 2) {
+    const diff = scores[0] - scores[scores.length-1];
+    if (diff > 10) trend = 'decreasing';
+    else if (diff < -10) trend = 'increasing';
+  }
+  // Generate advice
+  let advice = '';
+  if (trend === 'increasing') advice = 'Risk is trending up. Consider extra caution or alternative areas.';
+  else if (trend === 'decreasing') advice = 'Risk is trending down. Area may become safer soon.';
+  else advice = 'Risk is stable. Stay alert and check for updates.';
+  if (riskLevel === 'High Risk') advice += ' Avoid late hours and crowded places.';
+  if (riskLevel === 'Low Risk') advice += ' Area is generally safe, but always stay aware.';
+  box.innerHTML = `<div class='ai-title'>AI Risk Prediction & Advice</div><div>Predicted trend: <b>${trend}</b></div><div class='ai-advice'>${advice}</div>`;
+  box.style.display = '';
+}
+function hideAIPrediction() {
+  document.getElementById('ai-prediction-box').style.display = 'none';
+}
+
+async function getRiskAndBreakdown(address) {
+  return new Promise((resolve) => {
+    geocoder.geocode({ address: address }, (results, status) => {
+      if (status === "OK") {
+        const location = results[0].geometry.location;
+        let score = 0;
+        const weights = getRiskWeights();
+        let flood = isInFloodZone(location);
+        const breakdown = [];
+        if (flood) {
+          breakdown.push({ factor: 'Flood Zone', value: `+${weights.flood}` });
+          score += weights.flood;
+        } else {
+          breakdown.push({ factor: 'Flood Zone', value: '+0' });
+        }
+        const nearbyCrimeCount = countNearbyCrimes(location);
+        breakdown.push({ factor: `Nearby Crimes (${nearbyCrimeCount})`, value: `+${nearbyCrimeCount * weights.crime}` });
+        score += nearbyCrimeCount * weights.crime;
+        // For now, ignore transport in compare
+        const riskLevel = classifyRisk(score);
+        resolve({ address, score, riskLevel, breakdown });
+      } else {
+        resolve({ address, error: true });
+      }
+    });
+  });
+}
+
+function renderCompareResults(r1, r2) {
+  const box = document.getElementById('compare-results');
+  box.innerHTML = '';
+  [r1, r2].forEach((r, i) => {
+    const card = document.createElement('div');
+    card.className = 'compare-card';
+    if (r.error) {
+      card.innerHTML = `<h4>Address ${i+1}</h4><div style='color:#e53935;'>Not found or invalid address.</div>`;
+    } else {
+      card.innerHTML = `<h4>${r.address}</h4>
+        <div class='compare-risk ${r.riskLevel.toLowerCase().replace(' ','')}'>${r.riskLevel}</div>
+        <div style='font-size:1.08em;font-weight:600;'>Score: ${r.score}</div>
+        <div class='compare-breakdown'><ul>${r.breakdown.map(b=>`<li>${b.factor}: <b>${b.value}</b></li>`).join('')}</ul></div>`;
+    }
+    box.appendChild(card);
+  });
 }
 
 

@@ -1,0 +1,21 @@
+{
+  "name": "RiskMappr",
+  "short_name": "RiskMappr",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f2027",
+  "theme_color": "#43cea2",
+  "description": "Advanced, interactive risk assessment map for any location.",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+} 

@@ -6,6 +6,8 @@
     <title>Financial Risk Assessment Map</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#43cea2">
     <style>
         body {
             margin: 0;
@@ -87,7 +89,8 @@
       <div class="header-bar">
         <h1>Financial Risk Assessment Map</h1>
         <div class="header-actions">
-          <button class="analytics-btn" onclick="window.location.href='analytics.html'">Analytics</button>
+          <button class="analytics-btn" onclick="window.location.href='analytics.html'" aria-label="Go to Analytics">Analytics</button>
+          <button class="compare-btn" id="open-compare-btn" aria-label="Compare Locations">Compare Locations</button>
           <label class="switch">
             <input type="checkbox" id="theme-toggle">
             <span class="slider"></span>
@@ -98,14 +101,16 @@
     <div id="notification" style="display:none;"></div>
 
     <div id="controls">
-        <input type="text" id="address" placeholder="Enter an address or location">
-        <button onclick="geocodeAddress()">Check Risk</button>
+        <input type="text" id="address" placeholder="Enter an address or location" aria-label="Address input">
+        <button onclick="geocodeAddress()" aria-label="Check Risk">Check Risk</button>
+        <button id="locate-me-btn" aria-label="Locate Me">Locate Me</button>
     </div>
-    <button id="heatmap-toggle" style="margin-bottom:18px;">Show Crime Heatmap</button>
+    <button id="heatmap-toggle" style="margin-bottom:18px;" aria-label="Toggle Crime Heatmap">Show Crime Heatmap</button>
     <div id="loading-spinner" style="display:none;"></div>
 
     <div id="map"></div>
 
+    <div id="risk-alert" style="display:none;margin:24px auto 0 auto;"></div>
     <div id="risk-result">
         <h3>Risk Assessment Result</h3>
         <p id="risk-score"></p>
@@ -120,6 +125,16 @@
           <button id="save-pdf-btn">Save as PDF</button>
           <button id="share-report-btn">Share Report</button>
           <button id="customize-weights-btn">Customize Weights</button>
+        </div>
+        <div id="recommendations-box" style="display:none;margin-top:24px;"></div>
+        <div id="ai-prediction-box" style="display:none;margin-top:24px;"></div>
+        <div id="community-reports" style="display:none;margin-top:28px;">
+          <h3>Community Reports</h3>
+          <form id="report-form" style="margin-bottom:16px;">
+            <input type="text" id="report-text" placeholder="Describe a risk or incident (e.g. Flooded street, Recent theft)" maxlength="120" style="width:70%;padding:8px 12px;border-radius:7px;border:1px solid #ccc;font-size:1em;">
+            <button type="submit" style="padding:8px 18px;border-radius:7px;background:var(--header-gradient);color:#fff;font-weight:600;border:none;">Submit</button>
+          </form>
+          <ul id="reports-list" style="list-style:none;padding:0;margin:0;"></ul>
         </div>
     </div>
     
@@ -139,6 +154,25 @@
       </div>
     </div>
     
+    <div id="compare-modal" class="modal" style="display:none;">
+      <div class="modal-content" style="max-width:700px;">
+        <span class="close" id="close-compare-modal">&times;</span>
+        <h3>Compare Two Locations</h3>
+        <form id="compare-form" style="display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap;">
+          <div style="flex:1;min-width:220px;">
+            <label for="compare-address-1">Address 1</label>
+            <input type="text" id="compare-address-1" placeholder="Enter first address" style="width:100%;padding:8px 12px;border-radius:7px;border:1px solid #ccc;font-size:1em;">
+          </div>
+          <div style="flex:1;min-width:220px;">
+            <label for="compare-address-2">Address 2</label>
+            <input type="text" id="compare-address-2" placeholder="Enter second address" style="width:100%;padding:8px 12px;border-radius:7px;border:1px solid #ccc;font-size:1em;">
+          </div>
+          <button type="submit" class="compare-btn" style="padding:10px 22px;">Compare</button>
+        </form>
+        <div id="compare-results" style="margin-top:28px;"></div>
+      </div>
+    </div>
+    
     <script src="api_keys.js"></script>
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.umd.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -151,6 +185,14 @@
         script.async = true;
         script.defer = true;
         document.head.appendChild(script);
+    </script>
+
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('service-worker.js');
+        });
+      }
     </script>
 
 </body>
