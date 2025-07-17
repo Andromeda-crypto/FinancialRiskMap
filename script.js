@@ -20,7 +20,7 @@ function initMap() {
           lng: coord[0],
         }));
 
-        const polygon = new google.maps.Polygon({
+        new google.maps.Polygon({
           paths: coords,
           strokeColor: '#FF0000',
           strokeOpacity: 0.8,
@@ -33,7 +33,7 @@ function initMap() {
     })
     .catch((error) => console.error('Error loading flood zones:', error));
 
-  // Load and plot crime markers with clustering
+  // Load and plot crime markers directly
   fetch('data/crime_data.json')
     .then((response) => response.json())
     .then((data) => {
@@ -49,11 +49,12 @@ function initMap() {
         return true;
       });
 
-      const markers = validCrimes.map((crime) => {
+      validCrimes.forEach((crime) => {
         const lat = parseFloat(crime.lat);
         const lng = parseFloat(crime.lng);
-        return new google.maps.Marker({
+        new google.maps.Marker({
           position: { lat, lng },
+          map: map,
           title: `Crime: ${crime.type}`,
           icon: {
             path: google.maps.SymbolPath.CIRCLE,
@@ -65,12 +66,7 @@ function initMap() {
         });
       });
 
-      console.log(`Created ${markers.length} valid markers`);
-
-      const markerCluster = new MarkerClusterer(map, markers, {
-        imagePath:
-          'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m',
-      });
+      console.log(`Plotted ${validCrimes.length} crime markers`);
     })
     .catch((error) => console.error('Error loading crime data:', error));
 }
@@ -103,7 +99,7 @@ function geocodeAddress() {
   });
 }
 
-// Optional: Manual click-to-place marker
+
 function placeMarker(location) {
   if (marker) {
     marker.setMap(null);
