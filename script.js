@@ -85,15 +85,46 @@ function loadCrimeData() {
     .catch(error => console.error('Error loading crime data:', error));
 }
 
+// --- Notification & Spinner Helpers ---
+function showNotification(message, type = 'error', timeout = 3500) {
+  const notif = document.getElementById('notification');
+  notif.textContent = message;
+  notif.className = type === 'success' ? 'success' : '';
+  notif.style.display = 'block';
+  if (timeout > 0) {
+    setTimeout(() => { notif.style.display = 'none'; }, timeout);
+  }
+}
+
+function hideNotification() {
+  const notif = document.getElementById('notification');
+  notif.style.display = 'none';
+}
+
+function showSpinner() {
+  const spinner = document.getElementById('loading-spinner');
+  spinner.style.display = 'block';
+}
+
+function hideSpinner() {
+  const spinner = document.getElementById('loading-spinner');
+  spinner.style.display = 'none';
+}
+
 function geocodeAddress() {
-  const address = document.getElementById("address").value;
+  const address = document.getElementById("address").value.trim();
+
+  hideNotification();
 
   if (!address) {
-    alert("Please enter a valid address.");
+    showNotification("Please enter a valid address.");
     return;
   }
 
+  showSpinner();
+
   geocoder.geocode({ address: address }, (results, status) => {
+    hideSpinner();
     if (status === "OK") {
       const location = results[0].geometry.location;
       map.setCenter(location);
@@ -105,8 +136,9 @@ function geocodeAddress() {
       console.log("Risk Score:", riskScore, "| Risk Level:", riskLevel);
 
       displayRiskResult(riskScore, riskLevel);
+      showNotification("Risk assessment complete!", 'success', 2000);
     } else {
-      alert("Geocode was not successful: " + status);
+      showNotification("Geocode was not successful: " + status);
     }
   });
 }
