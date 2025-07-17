@@ -1,0 +1,189 @@
+/* Flashy & Stylish Financial Risk Map Theme */
+
+body {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #0f2027 0%, #2c5364 100%);
+  font-family: 'Poppins', 'Segoe UI', Arial, sans-serif;
+  color: #fff;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow-x: hidden;
+}
+
+header {
+  width: 100vw;
+  background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
+  color: #fff;
+  padding: 32px 0 24px 0;
+  text-align: center;
+  box-shadow: 0 6px 24px rgba(24,90,157,0.15);
+  letter-spacing: 2px;
+  border-bottom-left-radius: 32px;
+  border-bottom-right-radius: 32px;
+  position: relative;
+  z-index: 2;
+}
+
+header h1 {
+  font-size: 2.8em;
+  font-weight: 700;
+  margin: 0;
+  text-shadow: 0 4px 24px rgba(0,0,0,0.18);
+  letter-spacing: 1.5px;
+}
+
+#controls {
+  margin: 36px 0 18px 0;
+  display: flex;
+  gap: 16px;
+  background: rgba(255,255,255,0.08);
+  padding: 18px 32px;
+  border-radius: 18px;
+  box-shadow: 0 2px 16px rgba(67,206,162,0.12);
+  align-items: center;
+  backdrop-filter: blur(4px);
+}
+
+#controls input[type="text"] {
+  padding: 14px 18px;
+  width: 320px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  background: rgba(255,255,255,0.85);
+  color: #222;
+  box-shadow: 0 2px 8px rgba(24,90,157,0.08);
+  outline: none;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+
+#controls input[type="text"]:focus {
+  background: #fff;
+  box-shadow: 0 4px 16px #43cea2aa;
+}
+
+#controls button {
+  padding: 14px 32px;
+  background: linear-gradient(90deg, #43cea2 0%, #185a9d 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(24,90,157,0.18);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+  letter-spacing: 1px;
+}
+
+#controls button:hover {
+  background: linear-gradient(90deg, #185a9d 0%, #43cea2 100%);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 6px 24px #43cea2aa;
+}
+
+#map {
+  height: 70vh;
+  width: 92vw;
+  max-width: 1200px;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(24,90,157,0.25), 0 1.5px 8px #43cea2aa;
+  margin-bottom: 32px;
+  border: 4px solid #43cea2;
+  overflow: hidden;
+  background: #e0eafc;
+}
+
+#risk-result {
+  margin-top: 32px;
+  padding: 28px 32px 22px 32px;
+  border-radius: 18px;
+  width: 92vw;
+  max-width: 520px;
+  background: linear-gradient(120deg, #fff 60%, #43cea2 100%);
+  color: #222;
+  box-shadow: 0 4px 32px #185a9d33, 0 1.5px 8px #43cea2aa;
+  border: 2.5px solid #43cea2;
+  display: none;
+  text-align: center;
+  font-size: 1.2em;
+  animation: popIn 0.7s cubic-bezier(.68,-0.55,.27,1.55) 1;
+}
+
+#risk-result h3 {
+  margin-top: 0;
+  font-size: 1.5em;
+  font-weight: 700;
+  color: #185a9d;
+  letter-spacing: 1px;
+}
+
+#risk-score {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #222;
+  margin-bottom: 8px;
+}
+
+#risk-level {
+  font-size: 1.2em;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: 0 2px 8px #43cea244;
+}
+
+/* Risk level color transitions */
+#risk-level[style*="red"] {
+  color: #e53935 !important;
+  text-shadow: 0 2px 12px #e5393555;
+}
+#risk-level[style*="orange"] {
+  color: #ff9800 !important;
+  text-shadow: 0 2px 12px #ff980055;
+}
+#risk-level[style*="green"] {
+  color: #43cea2 !important;
+  text-shadow: 0 2px 12px #43cea244;
+}
+
+/* Animations */
+@keyframes popIn {
+  0% { transform: scale(0.7) translateY(40px); opacity: 0; }
+  80% { transform: scale(1.05) translateY(-8px); opacity: 1; }
+  100% { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  background: #185a9d22;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(120deg, #43cea2 0%, #185a9d 100%);
+  border-radius: 8px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 700px) {
+  #controls {
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px 10px;
+  }
+  #controls input[type="text"] {
+    width: 90vw;
+    font-size: 1em;
+  }
+  #map {
+    width: 98vw;
+    height: 50vh;
+    border-radius: 12px;
+  }
+  #risk-result {
+    width: 98vw;
+    padding: 18px 8px 14px 8px;
+  }
+}
