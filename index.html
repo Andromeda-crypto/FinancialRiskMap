@@ -65,6 +65,19 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
+
+        #risk-result {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            background: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            display: none;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -79,20 +92,11 @@
     </div>
 
     <div id="map"></div>
-    <div id="risk-result" style="
-     margin-top: 20px;
-    padding: 15px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    background: white;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    display: none;
-    text-align: center;
-    "> <h3>Risk Assessment result</h3>
-    <p id="risk-score"></p>
-    <p id="risk-level"></p>
+
+    <div id="risk-result">
+        <h3>Risk Assessment Result</h3>
+        <p id="risk-score"></p>
+        <p id="risk-level"></p>
     </div>
     
     <script src="api_keys.js"></script>
@@ -100,7 +104,6 @@
     <script src="script.js"></script>
 
     <script>
-        // Initialize the Google Maps API
         const script = document.createElement('script');
         script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry&loading=async`;
         script.async = true;
@@ -110,4 +113,3 @@
 
 </body>
 </html>
-

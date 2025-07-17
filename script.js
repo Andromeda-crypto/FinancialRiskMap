@@ -12,7 +12,11 @@ function initMap() {
 
   geocoder = new google.maps.Geocoder();
 
-  // Load flood zones
+  loadFloodZones();
+  loadCrimeData();
+}
+
+function loadFloodZones() {
   fetch('data/flood_zones.json')
     .then(response => response.json())
     .then(data => {
@@ -22,7 +26,7 @@ function initMap() {
           lng: coord[0],
         }));
 
-        const polygon = new google.maps.Polygon({
+        new google.maps.Polygon({
           paths: coords,
           strokeColor: '#FF0000',
           strokeOpacity: 0.8,
@@ -36,11 +40,12 @@ function initMap() {
       });
     })
     .catch((error) => console.error('Error loading flood zones:', error));
+}
 
-  // Load and plot crime markers with clustering
+function loadCrimeData() {
   fetch('data/crime_data.json')
-    .then((response) => response.json())
-    .then((data) => {
+    .then(response => response.json())
+    .then(data => {
       console.log(`Loaded ${data.length} crime records`);
 
       crimes = data.filter(crime => {
@@ -53,7 +58,7 @@ function initMap() {
         return true;
       });
 
-      const markers = crimes.map((crime) => {
+      const markers = crimes.map(crime => {
         const lat = parseFloat(crime.lat);
         const lng = parseFloat(crime.lng);
         return new google.maps.Marker({
@@ -77,7 +82,7 @@ function initMap() {
       });
 
     })
-    .catch((error) => console.error('Error loading crime data:', error));
+    .catch(error => console.error('Error loading crime data:', error));
 }
 
 function geocodeAddress() {
@@ -93,24 +98,13 @@ function geocodeAddress() {
       const location = results[0].geometry.location;
       map.setCenter(location);
 
-      if (marker) {
-        marker.setMap(null);
-      }
-
-      marker = new google.maps.Marker({
-        map: map,
-        position: location,
-        animation: google.maps.Animation.DROP,
-      });
-
-      console.log("Coordinates: ", location);
+      placeMarker(location);
 
       const riskScore = calculateRiskScore(location);
       const riskLevel = classifyRisk(riskScore);
       console.log("Risk Score:", riskScore, "| Risk Level:", riskLevel);
 
       displayRiskResult(riskScore, riskLevel);
-
     } else {
       alert("Geocode was not successful: " + status);
     }
@@ -187,5 +181,6 @@ function placeMarker(location) {
 
   console.log("Clicked coordinates: ", location);
 }
+
 
 
