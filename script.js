@@ -3,6 +3,8 @@ let geocoder;
 let marker;
 let floodZones = [];
 let crimes = [];
+let heatmap;
+let heatmapVisible = false;
 
 function initMap() {
   map = new google.maps.Map(document.getElementById('map'), {
@@ -81,6 +83,25 @@ function loadCrimeData() {
         markers: markers,
       });
 
+      // If heatmap toggle was pressed before data loaded
+      if (heatmapVisible && window.google && google.maps.visualization) {
+        if (!heatmap) {
+          heatmap = new google.maps.visualization.HeatmapLayer({
+            data: crimes.map(c => new google.maps.LatLng(parseFloat(c.lat), parseFloat(c.lng))),
+            map: map,
+            radius: 32,
+            opacity: 0.6,
+            gradient: [
+              'rgba(67,206,162,0)',
+              'rgba(67,206,162,0.5)',
+              'rgba(255,152,0,0.7)',
+              'rgba(229,57,53,1)'
+            ]
+          });
+        } else {
+          heatmap.setMap(map);
+        }
+      }
     })
     .catch(error => console.error('Error loading crime data:', error));
 }
@@ -131,11 +152,23 @@ function geocodeAddress() {
 
       placeMarker(location);
 
-      const riskScore = calculateRiskScore(location);
-      const riskLevel = classifyRisk(riskScore);
-      console.log("Risk Score:", riskScore, "| Risk Level:", riskLevel);
+      // Calculate breakdown
+      const breakdown = [];
+      let score = 0;
+      let flood = isInFloodZone(location);
+      if (flood) {
+        breakdown.push({ factor: 'Flood Zone', value: '+50' });
+        score += 50;
+      } else {
+        breakdown.push({ factor: 'Flood Zone', value: '+0' });
+      }
+      const nearbyCrimeCount = countNearbyCrimes(location);
+      breakdown.push({ factor: `Nearby Crimes (${nearbyCrimeCount})`, value: `+${nearbyCrimeCount * 5}` });
+      score += nearbyCrimeCount * 5;
+      const riskLevel = classifyRisk(score);
+      console.log("Risk Score:", score, "| Risk Level:", riskLevel);
 
-      displayRiskResult(riskScore, riskLevel);
+      displayRiskResult(score, riskLevel, breakdown);
       showNotification("Risk assessment complete!", 'success', 2000);
     } else {
       showNotification("Geocode was not successful: " + status);
@@ -181,10 +214,12 @@ function classifyRisk(score) {
   return 'Low Risk';
 }
 
-function displayRiskResult(score, level) {
+function displayRiskResult(score, level, breakdown) {
   const resultBox = document.getElementById('risk-result');
   const scoreElement = document.getElementById('risk-score');
   const levelElement = document.getElementById('risk-level');
+  const breakdownTable = document.getElementById('risk-breakdown');
+  const breakdownBody = breakdownTable.querySelector('tbody');
 
   scoreElement.textContent = `Risk Score: ${score}`;
   levelElement.textContent = `Risk Level: ${level}`;
@@ -195,6 +230,24 @@ function displayRiskResult(score, level) {
     levelElement.style.color = 'orange';
   } else {
     levelElement.style.color = 'green';
+  }
+
+  // Populate breakdown table
+  breakdownBody.innerHTML = '';
+  if (breakdown && Array.isArray(breakdown)) {
+    breakdown.forEach(row => {
+      const tr = document.createElement('tr');
+      const tdFactor = document.createElement('td');
+      tdFactor.textContent = row.factor;
+      const tdValue = document.createElement('td');
+      tdValue.textContent = row.value;
+      tr.appendChild(tdFactor);
+      tr.appendChild(tdValue);
+      breakdownBody.appendChild(tr);
+    });
+    breakdownTable.style.display = '';
+  } else {
+    breakdownTable.style.display = 'none';
   }
 
   resultBox.style.display = 'block';
@@ -213,6 +266,49 @@ function placeMarker(location) {
 
   console.log("Clicked coordinates: ", location);
 }
+
+// --- THEME TOGGLE ---
+function setTheme(isLight) {
+  document.body.classList.toggle('light', isLight);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Theme toggle
+  const themeToggle = document.getElementById('theme-toggle');
+  themeToggle.addEventListener('change', (e) => {
+    setTheme(e.target.checked);
+    localStorage.setItem('theme', e.target.checked ? 'light' : 'dark');
+  });
+  // Load theme from storage
+  const savedTheme = localStorage.getItem('theme');
+  if (savedTheme === 'light') {
+    themeToggle.checked = true;
+    setTheme(true);
+  }
+
+  // Heatmap toggle
+  const heatmapBtn = document.getElementById('heatmap-toggle');
+  heatmapBtn.addEventListener('click', () => {
+    if (!heatmap) {
+      heatmap = new google.maps.visualization.HeatmapLayer({
+        data: crimes.map(c => new google.maps.LatLng(parseFloat(c.lat), parseFloat(c.lng))),
+        map: heatmapVisible ? map : null,
+        radius: 32,
+        opacity: 0.6,
+        gradient: [
+          'rgba(67,206,162,0)',
+          'rgba(67,206,162,0.5)',
+          'rgba(255,152,0,0.7)',
+          'rgba(229,57,53,1)'
+        ]
+      });
+    }
+    heatmapVisible = !heatmapVisible;
+    heatmap.setMap(heatmapVisible ? map : null);
+    heatmapBtn.classList.toggle('active', heatmapVisible);
+    heatmapBtn.textContent = heatmapVisible ? 'Hide Crime Heatmap' : 'Show Crime Heatmap';
+  });
+});
 
 
 

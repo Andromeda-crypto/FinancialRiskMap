@@ -85,6 +85,10 @@
 
     <header>
         <h1>Financial Risk Assessment Map</h1>
+        <label class="switch">
+          <input type="checkbox" id="theme-toggle">
+          <span class="slider"></span>
+        </label>
     </header>
     <div id="notification" style="display:none;"></div>
 
@@ -92,6 +96,7 @@
         <input type="text" id="address" placeholder="Enter an address or location">
         <button onclick="geocodeAddress()">Check Risk</button>
     </div>
+    <button id="heatmap-toggle" style="margin-bottom:18px;">Show Crime Heatmap</button>
     <div id="loading-spinner" style="display:none;"></div>
 
     <div id="map"></div>
@@ -100,6 +105,12 @@
         <h3>Risk Assessment Result</h3>
         <p id="risk-score"></p>
         <p id="risk-level"></p>
+        <table id="risk-breakdown" style="width:100%;margin-top:18px;display:none;">
+          <thead>
+            <tr><th>Factor</th><th>Contribution</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
     </div>
     
     <script src="api_keys.js"></script>
@@ -108,7 +119,7 @@
 
     <script>
         const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry&loading=async`;
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${API_KEY}&callback=initMap&libraries=geometry,visualization&loading=async`;
         script.async = true;
         script.defer = true;
         document.head.appendChild(script);
