@@ -109,7 +109,8 @@ function geocodeAddress() {
       const riskLevel = classifyRisk(riskScore);
       console.log("Risk Score:", riskScore, "| Risk Level:", riskLevel);
 
-      alert(`Risk Assessment\nScore: ${riskScore}\nLevel: ${riskLevel}`);
+      displayRiskResult(riskScore, riskLevel);
+
     } else {
       alert("Geocode was not successful: " + status);
     }
@@ -154,6 +155,25 @@ function classifyRisk(score) {
   return 'Low Risk';
 }
 
+function displayRiskResult(score, level) {
+  const resultBox = document.getElementById('risk-result');
+  const scoreElement = document.getElementById('risk-score');
+  const levelElement = document.getElementById('risk-level');
+
+  scoreElement.textContent = `Risk Score: ${score}`;
+  levelElement.textContent = `Risk Level: ${level}`;
+
+  if (level === 'High Risk') {
+    levelElement.style.color = 'red';
+  } else if (level === 'Moderate Risk') {
+    levelElement.style.color = 'orange';
+  } else {
+    levelElement.style.color = 'green';
+  }
+
+  resultBox.style.display = 'block';
+}
+
 function placeMarker(location) {
   if (marker) {
     marker.setMap(null);
@@ -167,4 +187,5 @@ function placeMarker(location) {
 
   console.log("Clicked coordinates: ", location);
 }
+
 
