@@ -111,10 +111,16 @@
           </thead>
           <tbody></tbody>
         </table>
+        <div style="margin-top:18px;">
+          <button id="save-pdf-btn">Save as PDF</button>
+          <button id="share-report-btn">Share Report</button>
+        </div>
     </div>
     
     <script src="api_keys.js"></script>
     <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.umd.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.7.0/jspdf.plugin.autotable.min.js"></script>
     <script src="script.js"></script>
 
     <script>
@@ -124,6 +130,13 @@
         script.defer = true;
         document.head.appendChild(script);
     </script>
+
+    <div id="legend" class="legend">
+      <h4>Legend</h4>
+      <label><input type="checkbox" id="toggle-crime" checked> Crime Markers</label><br>
+      <label><input type="checkbox" id="toggle-heatmap"> Crime Heatmap</label><br>
+      <label><input type="checkbox" id="toggle-flood" checked> Flood Zones</label>
+    </div>
 
 </body>
 </html>

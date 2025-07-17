@@ -272,6 +272,51 @@ function setTheme(isLight) {
   document.body.classList.toggle('light', isLight);
 }
 
+// --- PDF & SHARE ---
+function saveReportAsPDF() {
+  if (!window.jspdf) {
+    showNotification('PDF export requires jsPDF.');
+    return;
+  }
+  const doc = new window.jspdf.jsPDF();
+  const score = document.getElementById('risk-score').textContent;
+  const level = document.getElementById('risk-level').textContent;
+  let breakdown = [['Factor', 'Contribution']];
+  document.querySelectorAll('#risk-breakdown tbody tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    breakdown.push([tds[0].textContent, tds[1].textContent]);
+  });
+  doc.text('Financial Risk Assessment Report', 10, 14);
+  doc.text(score, 10, 28);
+  doc.text(level, 10, 36);
+  doc.autoTable({
+    startY: 44,
+    head: [breakdown[0]],
+    body: breakdown.slice(1),
+    theme: 'grid',
+    headStyles: { fillColor: [67, 206, 162] },
+    styles: { fontSize: 11 }
+  });
+  doc.save('risk_report.pdf');
+}
+
+function shareReport() {
+  const score = document.getElementById('risk-score').textContent;
+  const level = document.getElementById('risk-level').textContent;
+  let breakdown = '';
+  document.querySelectorAll('#risk-breakdown tbody tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    breakdown += `\n${tds[0].textContent}: ${tds[1].textContent}`;
+  });
+  const text = `Financial Risk Assessment Report\n${score}\n${level}\n${breakdown}`;
+  if (navigator.share) {
+    navigator.share({ title: 'Risk Report', text });
+  } else {
+    navigator.clipboard.writeText(text);
+    showNotification('Report copied to clipboard!', 'success', 2000);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Theme toggle
   const themeToggle = document.getElementById('theme-toggle');
@@ -308,7 +353,117 @@ document.addEventListener('DOMContentLoaded', () => {
     heatmapBtn.classList.toggle('active', heatmapVisible);
     heatmapBtn.textContent = heatmapVisible ? 'Hide Crime Heatmap' : 'Show Crime Heatmap';
   });
+
+  // PDF/Share
+  document.getElementById('save-pdf-btn').addEventListener('click', saveReportAsPDF);
+  document.getElementById('share-report-btn').addEventListener('click', shareReport);
+
+  // Legend toggles
+  const crimeToggle = document.getElementById('toggle-crime');
+  const heatmapToggle = document.getElementById('toggle-heatmap');
+  const floodToggle = document.getElementById('toggle-flood');
+
+  crimeToggle.addEventListener('change', () => {
+    if (window.crimeMarkers) {
+      window.crimeMarkers.forEach(m => m.setMap(crimeToggle.checked ? map : null));
+    }
+  });
+  heatmapToggle.addEventListener('change', () => {
+    if (heatmap) {
+      heatmap.setMap(heatmapToggle.checked ? map : null);
+      heatmapVisible = heatmapToggle.checked;
+      document.getElementById('heatmap-toggle').classList.toggle('active', heatmapVisible);
+      document.getElementById('heatmap-toggle').textContent = heatmapVisible ? 'Hide Crime Heatmap' : 'Show Crime Heatmap';
+    }
+  });
+  floodToggle.addEventListener('change', () => {
+    if (window.floodPolygons) {
+      window.floodPolygons.forEach(p => p.setMap(floodToggle.checked ? map : null));
+    }
+  });
 });
+
+// --- Store markers/polygons for legend control ---
+function loadFloodZones() {
+  fetch('data/flood_zones.json')
+    .then(response => response.json())
+    .then(data => {
+      window.floodPolygons = [];
+      floodZones = data.features.map(feature => {
+        const coords = feature.geometry.coordinates[0].map(coord => ({
+          lat: coord[1],
+          lng: coord[0],
+        }));
+        const polygon = new google.maps.Polygon({
+          paths: coords,
+          strokeColor: '#FF0000',
+          strokeOpacity: 0.8,
+          strokeWeight: 2,
+          fillColor: '#FF0000',
+          fillOpacity: 0.35,
+          map: map,
+        });
+        window.floodPolygons.push(polygon);
+        return { paths: coords };
+      });
+    })
+    .catch((error) => console.error('Error loading flood zones:', error));
+}
+
+function loadCrimeData() {
+  fetch('data/crime_data.json')
+    .then(response => response.json())
+    .then(data => {
+      crimes = data.filter(crime => {
+        const lat = parseFloat(crime.lat);
+        const lng = parseFloat(crime.lng);
+        if (!isFinite(lat) || !isFinite(lng)) {
+          console.warn('Skipping invalid coordinates:', crime);
+          return false;
+        }
+        return true;
+      });
+      window.crimeMarkers = crimes.map(crime => {
+        const lat = parseFloat(crime.lat);
+        const lng = parseFloat(crime.lng);
+        return new google.maps.Marker({
+          position: { lat, lng },
+          title: `Crime: ${crime.type}`,
+          icon: {
+            path: google.maps.SymbolPath.CIRCLE,
+            scale: 4,
+            fillColor: '#0000FF',
+            fillOpacity: 0.6,
+            strokeWeight: 0,
+          },
+        });
+      });
+      new markerClusterer.MarkerClusterer({
+        map: map,
+        markers: window.crimeMarkers,
+      });
+      // If heatmap toggle was pressed before data loaded
+      if (heatmapVisible && window.google && google.maps.visualization) {
+        if (!heatmap) {
+          heatmap = new google.maps.visualization.HeatmapLayer({
+            data: crimes.map(c => new google.maps.LatLng(parseFloat(c.lat), parseFloat(c.lng))),
+            map: map,
+            radius: 32,
+            opacity: 0.6,
+            gradient: [
+              'rgba(67,206,162,0)',
+              'rgba(67,206,162,0.5)',
+              'rgba(255,152,0,0.7)',
+              'rgba(229,57,53,1)'
+            ]
+          });
+        } else {
+          heatmap.setMap(map);
+        }
+      }
+    })
+    .catch(error => console.error('Error loading crime data:', error));
+}
 
 
 
