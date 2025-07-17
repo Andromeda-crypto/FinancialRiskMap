@@ -228,6 +228,7 @@ function geocodeAddress() {
       console.log("Risk Score:", score, "| Risk Level:", riskLevel);
 
       displayRiskResult(score, riskLevel, breakdown);
+      saveRecentSearch(address, score, riskLevel, breakdown);
       showNotification("Risk assessment complete!", 'success', 2000);
     } else {
       showNotification("Geocode was not successful: " + status);
@@ -569,6 +570,13 @@ function loadCrimeData() {
       }
     })
     .catch(error => console.error('Error loading crime data:', error));
+}
+
+function saveRecentSearch(region, score, level, breakdown) {
+  let searches = JSON.parse(localStorage.getItem('recentRiskSearches') || '[]');
+  searches.unshift({ region, score, level, breakdown, timestamp: Date.now() });
+  if (searches.length > 10) searches = searches.slice(0, 10);
+  localStorage.setItem('recentRiskSearches', JSON.stringify(searches));
 }
 
 

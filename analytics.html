@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics | Financial Risk Assessment Map</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .analytics-container {
+      max-width: 1100px;
+      margin: 40px auto 0 auto;
+      background: var(--box-bg);
+      color: var(--box-text);
+      border-radius: 24px;
+      box-shadow: 0 8px 32px #185a9d33;
+      padding: 36px 32px 32px 32px;
+      min-height: 70vh;
+      transition: background 0.4s, color 0.4s;
+    }
+    .analytics-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .back-btn {
+      padding: 10px 22px;
+      background: var(--header-gradient);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1em;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 12px #185a9d55;
+      transition: background 0.2s, transform 0.2s;
+      margin-right: 10px;
+    }
+    .back-btn:hover {
+      background: linear-gradient(90deg, #185a9d 0%, #43cea2 100%);
+      transform: translateY(-2px) scale(1.04);
+    }
+    .summary-box {
+      background: linear-gradient(120deg, #fff 60%, #43cea2 100%);
+      color: #222;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px #43cea244;
+      padding: 24px 32px;
+      margin-bottom: 32px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 32px;
+      justify-content: space-between;
+    }
+    .summary-item {
+      min-width: 180px;
+      flex: 1 1 180px;
+      font-size: 1.2em;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .charts-section {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 40px;
+      margin-bottom: 32px;
+      justify-content: space-between;
+    }
+    .chart-box {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 2px 12px #185a9d22;
+      padding: 18px 18px 8px 18px;
+      flex: 1 1 320px;
+      min-width: 320px;
+      max-width: 480px;
+    }
+    .recent-searches {
+      margin-top: 24px;
+    }
+    .recent-searches h3 {
+      margin-bottom: 12px;
+      color: var(--accent2);
+    }
+    .recent-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .recent-list li {
+      background: rgba(67,206,162,0.08);
+      margin-bottom: 8px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 1em;
+      color: #222;
+      box-shadow: 0 1px 4px #185a9d11;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="analytics-header">
+      <h1>Analytics Dashboard</h1>
+      <button class="back-btn" onclick="window.location.href='index.html'">&#8592; Back to Map</button>
+    </div>
+  </header>
+  <div class="analytics-container">
+    <div class="summary-box" id="summary-box">
+      <div class="summary-item" id="summary-region">Region: <span>-</span></div>
+      <div class="summary-item" id="summary-risk">Total Risk Score: <span>-</span></div>
+      <div class="summary-item" id="summary-level">Risk Level: <span>-</span></div>
+      <div class="summary-item" id="summary-factors">Factors: <span>-</span></div>
+    </div>
+    <div class="charts-section">
+      <div class="chart-box">
+        <h3>Risk Factor Breakdown</h3>
+        <canvas id="breakdownChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h3>Recent Risk Scores</h3>
+        <canvas id="trendChart"></canvas>
+      </div>
+    </div>
+    <div class="recent-searches">
+      <h3>Recent Searches</h3>
+      <ul class="recent-list" id="recent-list"></ul>
+    </div>
+  </div>
+  <script src="analytics.js"></script>
+</body>
+</html> 
