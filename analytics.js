@@ -1,5 +1,4 @@
-// --- Analytics Page Logic ---
-// Store recent searches in localStorage as 'recentRiskSearches' (array of {region, score, level, breakdown, timestamp})
+
 
 function getRecentSearches() {
   return JSON.parse(localStorage.getItem('recentRiskSearches') || '[]');
@@ -82,7 +81,7 @@ function populateRecentList(searches) {
   });
 }
 
-// --- Main ---
+
 document.addEventListener('DOMContentLoaded', () => {
   const searches = getRecentSearches();
   if (!searches.length) return;
